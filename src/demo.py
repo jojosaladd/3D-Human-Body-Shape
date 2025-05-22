@@ -188,7 +188,7 @@ class HumanShapeAnalysisDemo(QtWidgets.QMainWindow):
       for i in range(0, len(self.slider)):
         self.slider[i].valueChangeForwarded.disconnect(
           self.viewer3D.sliderForwardedValueChangeHandler)
-        self.slider[i].setValue(t_data[i] / 3.0 * 100.0)
+        self.slider[i].setValue(int(t_data[i, 0] / 3.0 * 100.0))
         self.slider[i].valueChangeForwarded.connect(
           self.viewer3D.sliderForwardedValueChangeHandler)
     except ValueError:

@@ -5,7 +5,7 @@ import random
 from sklearn.feature_selection import RFE
 from sklearn.linear_model import LinearRegression
 from multiprocessing import Pool
-from fancyimpute import MICE
+# from fancyimpute import MICE
 import scipy
 import scipy.sparse
 import scipy.sparse.linalg
