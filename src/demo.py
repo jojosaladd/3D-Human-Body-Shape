@@ -19,7 +19,7 @@ class HumanShapeAnalysisDemo(QtWidgets.QMainWindow):
     container = QtWidgets.QWidget()
     container.setWindowTitle("Embedding Mayavi in a PyQt5 Application")
     layout = QtWidgets.QGridLayout(container)
-    self.viewer3D = MayaviQWidget(container)
+    self.viewer3D = MayaviQWidget(container) ###########
     layout.addWidget(self.viewer3D, 1, 1)
     container.show()
 
