@@ -3,16 +3,17 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from PyQt5.QtWidgets import QOpenGLWidget
 from reshaper import Reshaper
+
 import utils
 import numpy as np
 
 class PyQtOpenGL (QOpenGLWidget):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, ui=None):
         super().__init__(parent)
             # models for shape representing
         self.body = Reshaper(label="female")
         self.flag_ = 0
-
+        self.ui = ui
         self.vertices = self.body.mean_vertex
         self.normals = self.body.normals
         self.facets = self.body.facets
@@ -93,3 +94,73 @@ class PyQtOpenGL (QOpenGLWidget):
                         )
                     glVertex3f(*self.vertices[idx])
         glEnd()
+
+    def save(self):
+        # Save as 1-based facets (OBJ format expects that)
+        utils.save_obj("result.obj", self.vertices, self.facets + 1)
+        
+        # Calculate measurements
+        output = np.array(utils.calc_measure(self.body.cp, self.vertices, self.facets))
+        
+        for i in range(utils.M_NUM):
+            print("%s: %f" % (utils.M_STR[i], output[i, 0]))
+
+    def ok(self):
+        def get_val(widget):
+            try:
+                val = widget.toPlainText()
+                return float(val) if val else np.nan
+            except ValueError:
+                return np.nan
+
+        # Your used indices in M_STR
+        used_indices = {
+            0: get_val(self.ui.weightEdit),
+            1: get_val(self.ui.heightEidt),
+            3: get_val(self.ui.chestEdit),
+            10: get_val(self.ui.waistEdit),
+            11: get_val(self.ui.hipEdit),
+            7: get_val(self.ui.inseamEdit)
+        }
+
+        # Create input data array of shape (M_NUM, 1) with np.nan
+        data = np.full((utils.M_NUM, 1), np.nan)
+        for i, val in used_indices.items():
+            data[i, 0] = val
+
+        # Create mask for known inputs
+        mask = ~np.isnan(data)
+
+        # Normalize only the known entries
+        norm_data = data.copy()
+        for i in range(utils.M_NUM):
+            if mask[i, 0]:
+                norm_data[i, 0] -= self.body.mean_measure[i, 0]
+                norm_data[i, 0] /= self.body.std_measure[i, 0]
+
+        # Predict with imputation
+        self.input_data = self.body.get_predict(mask, norm_data)
+
+        # Update shape
+        self.update()
+
+        # For debug: print updated measurements
+        updated_measure = self.body.mean_measure + self.input_data * self.body.std_measure
+        for i in range(utils.M_NUM):
+            print(f"{utils.M_STR[i]}: {updated_measure[i, 0]:.2f}")
+
+    ##this works great! 
+    def update(self):
+        # Update body shape from predicted data
+        self.vertices, self.normals, self.facets = self.body.mapping(self.input_data, self.flag_)
+
+        # Ensure float32 type for OpenGL compatibility
+        self.vertices = self.vertices.astype('float32')
+        self.normals = self.normals.astype('float32')
+
+        # Fix indexing if needed
+        if np.max(self.facets) >= len(self.vertices):
+            print("⚠️ Converting 1-based facets to 0-based indexing.")
+            self.facets -= 1
+
+        self.repaint()  # Triggers paintGL()
