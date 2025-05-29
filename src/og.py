@@ -113,44 +113,64 @@ class PyQtOpenGL (QOpenGLWidget):
             except ValueError:
                 return np.nan
 
-        # Your used indices in M_STR
-        used_indices = {
-            0: get_val(self.ui.weightEdit),
-            1: get_val(self.ui.heightEidt),
-            3: get_val(self.ui.chestEdit),
-            10: get_val(self.ui.waistEdit),
-            11: get_val(self.ui.hipEdit),
-            7: get_val(self.ui.inseamEdit)
-        }
+        # Get user input
+        weight = get_val(self.ui.weightEdit)     # index 0
+        height = get_val(self.ui.heightEidt)     # index 1
+        chest = get_val(self.ui.chestEdit)       # index 3
+        waist = get_val(self.ui.waistEdit)       # index 10
+        hip = get_val(self.ui.hipEdit)           # index 11
+        inseam = get_val(self.ui.inseamEdit)     # index 7
 
-        # Create input data array of shape (M_NUM, 1) with np.nan
+        
+        # # Initialize data as nan
         data = np.full((utils.M_NUM, 1), np.nan)
-        for i, val in used_indices.items():
-            data[i, 0] = val
+        # print("DATA:",data)
+        # # Apply the proper transformations (based on your earlier example)
+        if not np.isnan(weight):
+            data[0, 0] = weight ** (1.0 / 3.0) * 1000   # cube root × 1000
+        if not np.isnan(height):
+            data[1, 0] = height * 10                  # cm → scale ×10
+        if not np.isnan(chest):
+            data[3, 0] = chest  * 10
+        if not np.isnan(inseam):
+            data[7, 0] = inseam * 10
+        if not np.isnan(waist):
+            data[10, 0] = waist * 10
+        if not np.isnan(hip):
+            data[11, 0] = hip * 10
 
-        # Create mask for known inputs
-        mask = ~np.isnan(data)
+        print("DATA:",data)
+        #print("Mean weight (raw):", self.body.mean_measure[0, 0]) 4092
+        #print("Mean height (raw):", self.body.mean_measure[1, 0]) 1631
 
-        # Normalize only the known entries
-        norm_data = data.copy()
-        for i in range(utils.M_NUM):
-            if mask[i, 0]:
-                norm_data[i, 0] -= self.body.mean_measure[i, 0]
-                norm_data[i, 0] /= self.body.std_measure[i, 0]
+        # # Create mask for known inputs
+        mask = np.zeros((utils.M_NUM, 1), dtype=bool)
 
-        # Predict with imputation
-        self.input_data = self.body.get_predict(mask, norm_data)
+        for i in range(0, data.shape[0]):
+             if not np.isnan(data[i, 0]): ##HERE i wanna make sure only areas with valid input(not NaN goes in but right now all values go in. )
+                print("HI? i is", i)
+                data[i, 0] -= self.body.mean_measure[i, 0]
+                data[i, 0] /= self.body.std_measure[i, 0]
+                mask[i, 0] = 1
+            
 
-        # Update shape
-        self.update()
+        # # Predict missing values using imputation
+        self.input_data = self.body.get_predict(mask, data)
+        self.updatep()
 
-        # For debug: print updated measurements
+        print("INPUT DATA?", self.input_data)
+        # # Trigger update (if you define updateModel or just call self.update())
+
+        # # Print predicted full-body measurements (de-normalized)
         updated_measure = self.body.mean_measure + self.input_data * self.body.std_measure
-        for i in range(utils.M_NUM):
-            print(f"{utils.M_STR[i]}: {updated_measure[i, 0]:.2f}")
+        print("body_mean:", self.body.mean_measure)
+        print("updated measure:", updated_measure)
+
+        ## here, i wanna set values (value[i, 0] / 10)) and  / 3.0 * 100.0))
+
 
     ##this works great! 
-    def update(self):
+    def updatep(self):
         # Update body shape from predicted data
         self.vertices, self.normals, self.facets = self.body.mapping(self.input_data, self.flag_)
 
@@ -158,9 +178,31 @@ class PyQtOpenGL (QOpenGLWidget):
         self.vertices = self.vertices.astype('float32')
         self.normals = self.normals.astype('float32')
 
-        # Fix indexing if needed
-        if np.max(self.facets) >= len(self.vertices):
-            print("⚠️ Converting 1-based facets to 0-based indexing.")
-            self.facets -= 1
+        print("vertices shape:", self.vertices.shape)
+        print("normals shape:", self.normals.shape)
+        print("facets shape:", self.facets.shape)
+        print("max facet index:", np.max(self.facets))
+        print("len(vertices):", len(self.vertices))
+        print("len(normals):", len(self.normals))
+
+        # # Fix indexing if needed
+        # if np.max(self.facets) >= len(self.vertices):
+        #     print("⚠️ Converting 1-based facets to 0-based indexing.")
+        #     self.facets -= 1
 
         self.repaint()  # Triggers paintGL()
+
+# ### 
+#        ### glBegin(GL_TRIANGLES)
+#         for face in self.facets:
+#             for idx in face:
+#                 if 0 <= idx < len(self.vertices):
+#                     base = idx * 3
+#                     if base + 2 < len(self.normals):
+#                         glNormal3f(
+#                             self.normals[base],
+#                             self.normals[base + 1],
+#                             self.normals[base + 2]
+#                         )
+#                     glVertex3f(*self.vertices[idx])
+#         glEnd()###

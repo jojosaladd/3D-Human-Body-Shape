@@ -107,6 +107,7 @@ class MayaviQWidget(QtWidgets.QWidget):
         data[i, 0] /= self.body.std_measure[i, 0]
         mask[i, 0] = 1
     self.input_data = self.body.get_predict(mask, data)
+    print("INPUT DATA FROM DEMO:", self.input_data)
     self.update()
     measure = self.body.mean_measure + self.input_data*self.body.std_measure
     return [self.input_data, measure]
