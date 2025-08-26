@@ -2,6 +2,9 @@ import sys
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from PyQt5.QtWidgets import QOpenGLWidget
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QMouseEvent, QWheelEvent
+
 from reshaper import Reshaper
 
 import utils
@@ -54,40 +57,45 @@ class PyQtOpenGL (QOpenGLWidget):
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
 
+
     def paintGL(self):
-                # Step 1: Clear the screen
+        # Step 1: Clear the screen
         glClearColor(0.2, 0.2, 0.2, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         # Step 2: Set up the modelview matrix
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
+        
         glTranslatef(0.0, 0.0, -2.5)
         glRotatef(180, 1.0, 0.0, 0.0)  # flip to front
         glRotatef(90, 1.0, 0.0, 0.0)   # lay upright
+        glRotatef(20, 0.0, 0.0, 1.0)  # flip to front
+
 
         # Step 3: Enable and reconfigure lighting (after transforms!)
         glEnable(GL_LIGHTING)
         glEnable(GL_LIGHT0)
         glEnable(GL_COLOR_MATERIAL)
 
-        glLightfv(GL_LIGHT0, GL_POSITION, [0.0, 0.0, 5.0, 1.0])
+        #glLightfv(GL_LIGHT0, GL_POSITION, [0.0, 0.0, 5.0, 1.0])
         glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
         glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-        glLightfv(GL_LIGHT0, GL_AMBIENT, [0.3, 0.3, 0.3, 1.0])
+        #glLightfv(GL_LIGHT0, GL_AMBIENT, [0.3, 0.3, 0.3, 1.0])
 
-        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, [0.1, 0.1, 0.1, 1.0])
+        #glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, [0.1, 0.1, 0.1, 1.0])
         glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 10.0)  # smoother highlight
 
         # Step 4: Material color
         glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
         glColor3f(0.9, 0.9, 0.9)
 
-        # Step 5: Backface culling
-        glEnable(GL_CULL_FACE)
-        glCullFace(GL_BACK)
-        glFrontFace(GL_CCW)
+        # # Step 5: Backface culling
+        # glEnable(GL_CULL_FACE)
+        # glCullFace(GL_BACK)
+        #glFrontFace(GL_CW)
 
+       # glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, 1)  # helps a lot during debugging
 
 
         # for face in range (0,12500):
@@ -184,8 +192,6 @@ class PyQtOpenGL (QOpenGLWidget):
 
         ## here, i wanna set values (value[i, 0] / 10)) and  / 3.0 * 100.0))
 
-
-    ##this works great! 
     def updatep(self):
         # Update body shape from predicted data
         self.vertices, self.normals, self.facets = self.body.mapping(self.input_data, self.flag_)
@@ -193,6 +199,8 @@ class PyQtOpenGL (QOpenGLWidget):
         # Ensure float32 type for OpenGL compatibility
         self.vertices = self.vertices.astype('float32')
         self.normals = self.normals.astype('float32')
+        self.normals *= -1.0
+
         self.facets += 1
         print("vertices shape:", self.vertices.shape)
         print("normals shape:", self.normals.shape)
