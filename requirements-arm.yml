@@ -1,0 +1,22 @@
+name: yoink
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.8
+  - numpy=1.21
+  - scipy=1.7
+  - openpyxl
+  - cython>=0.29.7,<0.30
+  - cvxpy=1.1.18
+  - ecos=2.0.7
+  - traits=6.3.2
+  - traitsui=7.2.1
+  - pyqt           # No version pin to allow ARM-compatible build
+  - vtk=9.0.3
+  - mayavi=4.7.1
+  - scikit-learn=0.24
+  - pip
+  - pip:
+      - fancyimpute==0.3.2
+      - PyOpenGL==3.1.0
